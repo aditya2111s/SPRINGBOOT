@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html >
+
+<body>
+
+    <table >
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>NAME</th>
+                <th>DEPARTMENT</th>
+                <th>SALARY</th>
+                <th>ACTION</th>
+            </tr>
+        </thead>
+        <tbody id="tb"></tbody>
+    </table>
+
+    <form id="form">
+        <input id="name" placeholder="Name">
+        <input id="dept" placeholder="Department">
+        <input id="salary" placeholder="Salary">
+        <button type="submit" >add</button>
+    </form>
+
+
+    <script>
+        const baseapi = "http://localhost:8080/api/employee"
+        const tb = document.getElementById("tb")    
+        const nameInput = document.getElementById("name")    
+        const dept = document.getElementById("dept")    
+        const salaryInput = document.getElementById("salary")
+        const form = document.getElementById("form") 
+        let editId = null;   
+        function loadEmployee(){   
+            fetch(baseapi + "/get")
+            .then(res =>{
+                if(!res.ok){
+                    throw new Error("Response is not okay" 
+                        + res.status
+                    )
+                }
+                return res.json()
+            })
+            .then(data =>{
+                tb.innerHTML =""
+                data.forEach(element => {
+                    const tr = document.createElement("tr")
+                    tr.innerHTML=`
+                    <td>${element.id}</td>
+                    <td>${element.name}</td>
+                    <td>${element.department}</td>
+                    <td>${element.salary}</td>
+                    <td><button onclick="updateEmployee(${element.id},'${element.name}','${element.department}', ${element.salary})">Edit</button></td>
+                    <td><button onclick="deleteEmployee(${element.id})">Delete</button></td>`;    
+                    tb.appendChild(tr);
+                });
+
+            })
+            .catch(err => {
+                console.error("request failes"+ err.message)
+            })
+        }
+
+            function updateEmployee(id,name,department,salary){
+                editId = id;
+                nameInput.value = name;
+                dept.value = department;
+                salaryInput.value = salary;
+            }
+            form.addEventListener("submit", (e) => {
+    e.preventDefault();
+
+    const emp = {
+        name: nameInput.value,
+        department: dept.value,
+        salary: Number(salaryInput.value)
+    };
+
+    if (editId !== null) {
+
+
+        fetch(baseapi + "/update/" + editId, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(emp)
+        })
+        .then(res => {
+            if (!res.ok) {
+                throw new Error("Response is not okay " + res.status);
+            }
+
+            alert("Employee updated");
+
+            editId = null;
+            form.reset();
+            loadEmployee();
+        })
+        .catch(err => {
+            console.error("Request failed " + err.message);
+        });
+
+    } else {
+
+        fetch(baseapi + "/insert", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(emp)
+        })
+        .then(res => {
+            if (!res.ok) {
+                throw new Error("Response is not okay " + res.status);
+            }
+
+            alert("Employee inserted");
+
+            form.reset();
+            loadEmployee();
+        })
+        .catch(err => {
+            console.error("Request failed " + err.message);
+        });
+    }
+});
+            
+            function deleteEmployee(id){
+                if(!confirm("delete this employee")){
+                    return
+                }
+                fetch(baseapi + "/delete/" + id, {method:"DELETE"})
+                .then(() =>{
+                    alert(`DELETED SUCCESSFULLY`)
+                    loadEmployee()
+                })
+                .catch(err => {
+                console.error("request failes"+ err.message)
+            })
+            }
+        loadEmployee();
+    </script>
+</body>
+</html>
